@@ -64,7 +64,6 @@ class FreelanceBot:
         self.notification_engine = notification_engine
         self.notification_scheduler = notification_scheduler
         self.user_interaction_tracker = user_interaction_tracker
-        self.register_handlers()
         
     def register_handlers(self):
         """Регистрация обработчиков команд и сообщений"""
@@ -81,6 +80,17 @@ class FreelanceBot:
         
         # Обработчик текстовых сообщений
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.text_handler))
+        
+        # Добавление дополнительных обработчиков команд
+        self.application.add_handler(CommandHandler("add_keywords", add_keywords))
+        self.application.add_handler(CommandHandler("remove_keywords", remove_keywords))
+        self.application.add_handler(CommandHandler("add_tech", add_technologies))
+        self.application.add_handler(CommandHandler("remove_tech", remove_technologies))
+        self.application.add_handler(CommandHandler("set_budget", set_budget))
+        self.application.add_handler(CommandHandler("set_region", set_regions))
+        self.application.add_handler(CommandHandler("set_project_type", set_project_types))
+        self.application.add_handler(CommandHandler("set_experience", set_experience_level))
+        self.application.add_handler(CommandHandler("set_payment_type", set_payment_type))
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -275,10 +285,26 @@ class FreelanceBot:
         
         await update.message.reply_text(message)
     
-    def run(self):
-        """Запуск бота"""
+    async def run(self):
+        """Асинхронный запуск бота"""
         logger.info("Запуск телеграм-бота...")
-        self.application.run_polling()
+        
+        # Регистрация обработчиков команд
+        self.register_handlers()
+        
+        async with self.application:
+            await self.application.start()
+            await self.application.updater.start_polling()
+            
+            # Ждем завершения работы
+            try:
+                while True:
+                    await asyncio.sleep(1)
+            except KeyboardInterrupt:
+                logger.info("Бот остановлен пользователем")
+            finally:
+                await self.application.updater.stop()
+                await self.application.stop()
     
     async def send_notification(self, user_id: int, message: str):
         """
@@ -573,36 +599,28 @@ def setup_bot_application(token: str):
         notification_engine, notification_scheduler, user_interaction_tracker
     )
     
-    # Добавление дополнительных обработчиков команд
-    bot_core.application.add_handler(CommandHandler("add_keywords", add_keywords))
-    bot_core.application.add_handler(CommandHandler("remove_keywords", remove_keywords))
-    bot_core.application.add_handler(CommandHandler("add_tech", add_technologies))
-    bot_core.application.add_handler(CommandHandler("remove_tech", remove_technologies))
-    bot_core.application.add_handler(CommandHandler("set_budget", set_budget))
-    bot_core.application.add_handler(CommandHandler("set_region", set_regions))
-    bot_core.application.add_handler(CommandHandler("set_project_type", set_project_types))
-    bot_core.application.add_handler(CommandHandler("set_experience", set_experience_level))
-    bot_core.application.add_handler(CommandHandler("set_payment_type", set_payment_type))
-    
-    # Сохранение экземпляра бота в bot_data для доступа в обработчиках
+    # Добавляем бота в данные приложения для доступа в обработчиках
     async def setup_bot_data(application):
         application.bot_data['bot_core'] = bot_core
     
-    bot_core.application.add_post_init(setup_bot_data)
+    bot_core.application.post_init = setup_bot_data
     
     return bot_core
 
 
 if __name__ == "__main__":
     import os
-    from config import Config
+    from config import TELEGRAM_BOT_TOKEN
     
     # Получаем токен из переменной окружения или конфига
-    token = os.getenv('TELEGRAM_BOT_TOKEN') or Config.TELEGRAM_BOT_TOKEN
+    token = os.getenv('TELEGRAM_BOT_TOKEN') or TELEGRAM_BOT_TOKEN
     
     if not token:
         print("Ошибка: Не указан токен телеграм-бота. Установите переменную окружения TELEGRAM_BOT_TOKEN или укажите токен в конфиге.")
     else:
-        bot = setup_bot_application(token)
-        print("Бот успешно настроен. Запуск...")
-        bot.run()
+        async def main():
+            bot = setup_bot_application(token)
+            print("Бот успешно настроен. Запуск...")
+            await bot.run()
+        
+        asyncio.run(main())
