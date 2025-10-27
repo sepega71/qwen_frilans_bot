@@ -6,5 +6,6 @@
 """
 
 from .advanced_filter import AdvancedFilterEngine
+from .filter_engine import FilterEngine
 
-__all__ = ['AdvancedFilterEngine']
+__all__ = ['AdvancedFilterEngine', 'FilterEngine']
