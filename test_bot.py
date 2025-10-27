@@ -21,12 +21,18 @@ async def test_data_collection():
         projects = await collector.collect_all_data()
         print(f"✓ Сбор данных завершен. Получено {len(projects)} проектов")
         
-        # Показать первые несколько проектов
-        for i, project in enumerate(projects[:3]):
+        # Показать все проекты
+        for i, project in enumerate(projects):
             print(f"  Проект {i+1}: {project.get('title', 'Без названия')} - {project.get('source', 'Неизвестный источник')}")
+            print(f"    Описание: {project.get('description', 'Нет описания')[:100]}...")
+            print(f"    Бюджет: {project.get('budget', 'Не указан')}")
+            print(f"    Ссылка: {project.get('url', 'Нет ссылки')}")
+            print()
         
     except Exception as e:
         print(f"✗ Ошибка при сборе данных: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def main():

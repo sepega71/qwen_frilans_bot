@@ -91,6 +91,7 @@ class FreelanceBot:
         self.application.add_handler(CommandHandler("set_project_type", set_project_types))
         self.application.add_handler(CommandHandler("set_experience", set_experience_level))
         self.application.add_handler(CommandHandler("set_payment_type", set_payment_type))
+        self.application.add_handler(CommandHandler("check_updates", self.check_updates))
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -326,7 +327,7 @@ class FreelanceBot:
     async def track_user_interaction(self, user_id: int, project_id: int, interaction_type: str):
         """
         Отслеживание взаимодействия пользователя с проектом
-        
+         
         Args:
             user_id: ID пользователя
             project_id: ID проекта
@@ -334,6 +335,52 @@ class FreelanceBot:
         """
         self.user_interaction_tracker.record_interaction(user_id, project_id, interaction_type)
         logger.info(f"Записано взаимодействие: пользователь {user_id}, проект {project_id}, тип {interaction_type}")
+    
+    async def check_updates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Ручная проверка наличия новых проектов по фильтрам пользователя"""
+        user_id = update.effective_user.id
+        
+        # Получаем настройки пользователя
+        user_settings = self.user_settings_manager.get_user_settings(user_id)
+        
+        if not user_settings.subscribed:
+            await update.message.reply_text("❌ Для использования этой команды необходимо подписаться на рассылку")
+            return
+
+        try:
+            # Собираем последние проекты из всех источников
+            from data_collector import DataCollector
+            collector = DataCollector()
+            all_projects = await collector.collect_all_data()
+            
+            # Фильтруем проекты по настройкам пользователя
+            # Преобразуем UserFilters в словарь
+            filters_dict = {
+                'keywords': user_settings.filters.keywords,
+                'technologies': user_settings.filters.technologies,
+                'min_price': user_settings.filters.budget_min,
+                'max_price': user_settings.filters.budget_max,
+                'regions': user_settings.filters.regions,
+                'project_types': user_settings.filters.project_types,
+                'experience_level': user_settings.filters.experience_level,
+                'payment_type': user_settings.filters.payment_type
+            }
+            filtered_projects = self.filter_engine.filter_projects(all_projects, filters_dict)
+            
+            if filtered_projects:
+                # Отправляем персонализированные уведомления
+                await update.message.reply_text(f"Найдено {len(filtered_projects)} проектов по вашим фильтрам:")
+                
+                # Отправляем первые 5 проектов
+                for project in filtered_projects[:5]:
+                    message = self.personalization_engine.format_project_message(project)
+                    await update.message.reply_text(message, parse_mode='HTML')
+            else:
+                await update.message.reply_text("На данный момент нет проектов, соответствующих вашим фильтрам")
+        
+        except Exception as e:
+            logger.error(f"Ошибка при ручной проверке обновлений: {e}")
+            await update.message.reply_text(f"Ошибка при проверке обновлений: {e}")
 
 
 # Дополнительные функции для работы с настройками пользователя
@@ -591,6 +638,7 @@ def setup_bot_application(token: str):
         notification_engine, notification_scheduler, user_interaction_tracker
     )
     
+    # Возвращаем бота с интеграцией всех компонентов
     return bot_core
 
 
