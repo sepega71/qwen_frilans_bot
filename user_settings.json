@@ -3,17 +3,31 @@
     "user_id": 919995336,
     "subscribed": true,
     "filters": {
-      "keywords": [],
-      "technologies": [],
-      "budget_min": null,
-      "budget_max": null,
-      "regions": [],
-      "project_types": [],
-      "experience_level": null,
-      "payment_type": null,
+      "keywords": [
+        "python",
+        "telegram",
+        "bot"
+      ],
+      "technologies": [
+        "python",
+        "javascript",
+        "react"
+      ],
+      "budget_min": 1000,
+      "budget_max": 50000,
+      "regions": [
+        "москва",
+        "санкт-петербург"
+      ],
+      "project_types": [
+        "order",
+        "vacancy"
+      ],
+      "experience_level": "junior",
+      "payment_type": "hourly",
       "max_deadline_days": null
     },
     "created_at": "2025-10-27T16:09:14.343342",
-    "updated_at": "2025-10-27T16:09:26.779596"
+    "updated_at": "2025-10-27T16:46:21.673160"
   }
 }

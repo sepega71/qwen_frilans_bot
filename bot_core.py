@@ -285,26 +285,18 @@ class FreelanceBot:
         
         await update.message.reply_text(message)
     
-    async def run(self):
-        """Асинхронный запуск бота"""
+    def run(self):
+        """Запуск бота с использованием встроенного метода run_polling"""
         logger.info("Запуск телеграм-бота...")
+        
+        # Добавляем бота в данные приложения до регистрации обработчиков
+        self.application.bot_data['bot_core'] = self
         
         # Регистрация обработчиков команд
         self.register_handlers()
         
-        async with self.application:
-            await self.application.start()
-            await self.application.updater.start_polling()
-            
-            # Ждем завершения работы
-            try:
-                while True:
-                    await asyncio.sleep(1)
-            except KeyboardInterrupt:
-                logger.info("Бот остановлен пользователем")
-            finally:
-                await self.application.updater.stop()
-                await self.application.stop()
+        # Запуск бота с использованием встроенного метода
+        self.application.run_polling(drop_pending_updates=True)
     
     async def send_notification(self, user_id: int, message: str):
         """
@@ -599,12 +591,6 @@ def setup_bot_application(token: str):
         notification_engine, notification_scheduler, user_interaction_tracker
     )
     
-    # Добавляем бота в данные приложения для доступа в обработчиках
-    async def setup_bot_data(application):
-        application.bot_data['bot_core'] = bot_core
-    
-    bot_core.application.post_init = setup_bot_data
-    
     return bot_core
 
 
@@ -618,9 +604,6 @@ if __name__ == "__main__":
     if not token:
         print("Ошибка: Не указан токен телеграм-бота. Установите переменную окружения TELEGRAM_BOT_TOKEN или укажите токен в конфиге.")
     else:
-        async def main():
-            bot = setup_bot_application(token)
-            print("Бот успешно настроен. Запуск...")
-            await bot.run()
-        
-        asyncio.run(main())
+        bot = setup_bot_application(token)
+        print("Бот успешно настроен. Запуск...")
+        bot.run()
