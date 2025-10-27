@@ -552,13 +552,14 @@ def setup_bot_application(token: str):
     """Настройка приложения бота с дополнительными обработчиками"""
     # Создаем экземпляры всех необходимых компонентов
     data_storage = DataStorage()
+    user_settings_manager = UserSettingsManager()
     filter_engine = FilterEngine()
-    personalization_engine = PersonalizationEngine(UserSettingsManager(), filter_engine)
+    personalization_engine = PersonalizationEngine(user_settings_manager, filter_engine)
     user_interaction_tracker = UserInteractionTracker()
     
     # Создаем движок уведомлений
     notification_engine = NotificationEngine(
-        token, UserSettingsManager(), data_storage, personalization_engine
+        token, user_settings_manager, data_storage, personalization_engine
     )
     
     # Создаем планировщик уведомлений
@@ -593,8 +594,15 @@ def setup_bot_application(token: str):
 
 
 if __name__ == "__main__":
-    # Для запуска бота нужно указать токен
-    # TELEGRAM_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-    # bot = setup_bot_application(TELEGRAM_TOKEN)
-    # bot.run()
-    pass
+    import os
+    from config import Config
+    
+    # Получаем токен из переменной окружения или конфига
+    token = os.getenv('TELEGRAM_BOT_TOKEN') or Config.TELEGRAM_BOT_TOKEN
+    
+    if not token:
+        print("Ошибка: Не указан токен телеграм-бота. Установите переменную окружения TELEGRAM_BOT_TOKEN или укажите токен в конфиге.")
+    else:
+        bot = setup_bot_application(token)
+        print("Бот успешно настроен. Запуск...")
+        bot.run()

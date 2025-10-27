@@ -96,6 +96,20 @@ class FilterEngine:
             if not self.advanced_filter.matches_complex_keywords(project, filters['complex_keywords']):
                 return False
         
+        # Проверяем регион, если он указан в проекте и фильтрах
+        regions = filters.get('regions', [])
+        if regions:
+            project_region = project.get('region', '').lower()
+            if project_region and not any(region.lower() in project_region for region in regions):
+                return False
+        
+        # Проверяем типы проектов
+        project_types = filters.get('project_types', [])
+        if project_types:
+            project_type = project.get('type', '').lower()
+            if project_type and project_type not in project_types:
+                return False
+        
         return True
     
     def _extract_price(self, price_str: str) -> float:
